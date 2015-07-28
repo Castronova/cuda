@@ -2,8 +2,8 @@ __author__ = 'tony'
 
 import numpy
 import subprocess
-from numbapro import autojit, jit, int32, vectorize
-from numba import cuda, float32, int32, f8
+# from numbapro import autojit, jit, int32, vectorize
+# from numba import cuda, float32, int32, f8
 
 def calculate_delaunay_using_triangle(node_filepath):
 
@@ -21,11 +21,7 @@ def calculate_delaunay_using_triangle(node_filepath):
         if 'Writing' in line:
             out_files.append(line.split(' ')[-1][:-1])
 
-
-
     return out_files
-
-
 
 def read_triangle_outputs(filelist):
 
@@ -40,7 +36,6 @@ def read_triangle_outputs(filelist):
                     if line[0] != '#': # omit comments
                         idx,a,b,c = line.strip().split()
                         delaunay_triangles.append([a,b,c])
-
 
             return delaunay_triangles
 
@@ -77,7 +72,7 @@ def write_node_input(nparray, writepath):
 
 
 # todo: THIS IS FASTER WITHOUT CUDA!
-@autojit
+# @autojit
 def format_numpy_array(nparray):
 
     # build bounday array
@@ -101,56 +96,8 @@ def format_numpy_array(nparray):
     formatted = formatted.reshape((-1,4))
     return formatted, nodata_coords
 
-blockdim = (32, 8)
-griddim = (32,16)
-# @cuda.jit(argtypes=[f8[:,:], f8[:,:]])
+
 def transpose(a):
-
-
-    import time
-    import numpy as np
-    import pycuda.autoinit
-    import pycuda.gpuarray as gpuarray
-    import scikits.cuda.cublas as cublas
-
-    handle = cublas.cublasCreate()
-    N = 1000
-    a = np.random.rand(N, N)
-    a_gpu = gpuarray.to_gpu(a)
-    a_trans_gpu = gpuarray.zeros((N, N), dtype=np.double)
-    alpha = 1.0
-    beta = 0.0
-    start = time.time()
-    cublas.cublasDgeam(handle, 't', 'n', N, N,
-                       alpha, a_gpu.gpudata, N,
-                       beta, a_gpu.gpudata, N,
-                       a_trans_gpu.gpudata, N)
-    print time.time()-start
-    assert np.allclose(a_trans_gpu.get(), a.T)
-    cublas.cublasDestroy(handle)
-
-
-    import numbapro.cudalib.cublas as cublas
-
-    A = numpy.asfortranarray(a)
-    D = numpy.zeros_like(A, order='F')
-
-    # cuBLAS
-    blas = cublas.Blas()
-    # geam(transa, transb, m, n, alpha, A, beta, B, C)
-    blas.geam('T', 'T', a.shape[0], a.shape[1], 1, A, 0, D, a.shape[0])
-    # blas.gemm('N', 'N', N, N, N, 1.0, A, np.diag(B), 1.0, D)
-    # cuda_time = timer() - start
-
-    # print("CUBLAS took %f seconds" % cuda_time)
-    # diff = np.abs(D - E)
-    # print("Maximum error %f" % np.max(diff))
-
-
-    return D
-
-
-def scikits_example(a):
     '''
     https://github.com/lebedov/scikit-cuda/issues/33
     pip install --upgrade --no-deps git+https://github.com/lebedov/scikits.cuda.git
@@ -181,16 +128,18 @@ def scikits_example(a):
     # assert np.allclose(a_trans_gpu.get(), a.T)
     cublas.cublasDestroy(handle)
 
-    print'here'
+    return a_trans_gpu
 
 
 from osgeo import gdal
 from osgeo.gdalconst import *
-image = '../matlab_landsat_7_interpolation/LE70380332014363EDC00/LE70380332014363EDC00_B1.TIF'
+image = './data/LE70380332014363EDC00_B1.TIF'
 ds = gdal.Open(image, GA_ReadOnly)
 band = ds.GetRasterBand(1)
 data = band.ReadAsArray()
 img = data
 nparray = img.astype(numpy.float32)
 
-scikits_example(nparray)
+t = transpose(nparray)
+
+print 'here'
