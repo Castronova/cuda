@@ -1,10 +1,5 @@
 __author__ = 'tonycastronova', 'caleb buahin'
 
-import random
-import numpy as np
-import matplotlib.pyplot as plt
-import time
-
 class GObject:
     def __init__(self):
         pass
